@@ -1,30 +1,45 @@
 package sara.melo.crudspringcomics.models;
 
+import java.util.Date;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import javax.persistence.UniqueConstraint;
+import javax.validation.constraints.Email;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
+import sara.melo.crudspringcomics.controllers.validation.Cpf;
 
 @Entity
+@Table(uniqueConstraints={@UniqueConstraint(columnNames = {"cpf" , "email"})})
 public class User {
 	
-	@GeneratedValue
+	@GeneratedValue(strategy = GenerationType.AUTO)
 	@Id
 	private Integer id;
 	
-	@Column(name = "nome")
-	private String nome;
-	
-	@Column(name = "email")
-	private String email;
-	
-	@Column(name = "cpf")
+	@NotBlank(message = "O Nome é obrigatório!")
+	private String nome;		
+
+	@NotBlank(message = "O E-mail é obrigatório!")
+	@Email(message = "Por favor, informe um e-mail válido!")
+	private String email;	
+
+	@Cpf
+	@NotBlank(message = "O CPF é obrigatório!")
 	private String cpf;
 	
-	@Column(name = "nascimento")
-	private String nascimento;
+	@NotNull(message = "A data de nascimento é obrigatória!")
+	@JsonFormat(pattern="dd/MM/yyyy")
+	private Date nascimento;
 	
 	public Integer getId() {
 		return id;
@@ -50,10 +65,10 @@ public class User {
 	public void setCpf(String cpf) {
 		this.cpf = cpf;
 	}
-	public String getNascimento() {
+	public Date getNascimento() {
 		return nascimento;
 	}
-	public void setNascimento(String nascimento) {
+	public void setNascimento(Date nascimento) {
 		this.nascimento = nascimento;
 	}
 	

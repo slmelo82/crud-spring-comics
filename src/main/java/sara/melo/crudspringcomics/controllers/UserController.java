@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
+import javax.validation.Valid;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -30,12 +32,6 @@ public class UserController {
 		this.userRepository = userRepository;
 	}
 	
-	@PostMapping
-	public ResponseEntity<User> save(@RequestBody User user) {
-		userRepository.save(user); // Salva usuário no banco de dados
-		return new ResponseEntity<>(user, HttpStatus.OK); // Retorna status 200 com os dados do usuário criado;
-	}
-	
 	@GetMapping
 	//Retorna uma lista de todos os usuários
 	public ResponseEntity<List<User>> getAll() {
@@ -55,6 +51,12 @@ public class UserController {
 		} catch (NoSuchElementException nsee) {
 			return new ResponseEntity<Optional<User>>(HttpStatus.NOT_FOUND); // Não encontrou o usuário, retorna status 404;
 		}			
+	}	
+	
+	@PostMapping
+	public ResponseEntity<User> save(@RequestBody @Valid User user) {
+		userRepository.save(user); // Salva usuário no banco de dados
+		return new ResponseEntity<>(user, HttpStatus.OK); // Retorna status 200 com os dados do usuário criado;
 	}
 	
 	@DeleteMapping(path="/{id}")
@@ -70,7 +72,7 @@ public class UserController {
 	
 	@PutMapping(path="/{id}")
 	//Atualiza os dados de um usuário; Se não encontrar, retorna erro 404
-	public ResponseEntity<User> update(@PathVariable Integer id, @RequestBody User newUser) {			
+	public ResponseEntity<User> update(@PathVariable Integer id, @RequestBody @Valid User newUser) {			
 		return userRepository.findById(id).map(user -> {
 			user.setNome(newUser.getNome());
 			user.setEmail(newUser.getEmail());
