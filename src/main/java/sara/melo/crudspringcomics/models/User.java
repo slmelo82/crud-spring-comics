@@ -1,12 +1,19 @@
 package sara.melo.crudspringcomics.models;
 
 import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 import javax.validation.constraints.Email;
@@ -19,7 +26,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import sara.melo.crudspringcomics.controllers.validation.Cpf;
 
 @Entity
-@Table(uniqueConstraints={@UniqueConstraint(columnNames = {"cpf" , "email"})})
+@Table(name="users", uniqueConstraints={@UniqueConstraint(columnNames = {"cpf" , "email"})})
 public class User {
 	
 	@GeneratedValue(strategy = GenerationType.AUTO)
@@ -36,11 +43,24 @@ public class User {
 	@Cpf
 	@NotBlank(message = "O CPF é obrigatório!")
 	private String cpf;
-	
+		
 	@NotNull(message = "A data de nascimento é obrigatória!")
 	@JsonFormat(pattern="dd/MM/yyyy")
 	private Date nascimento;
 	
+	//@ManyToMany(fetch = FetchType.LAZY)
+	//@JoinTable(name="users_comics",
+			//joinColumns = {@JoinColumn(name = "user_id")}, 
+		    //inverseJoinColumns = {@JoinColumn(name = "comic_id")}) 
+	//private Set<Comic> comics = new HashSet<>();
+					
+		
+	//public Set<Comic> getComics() {
+		//return comics;
+	//}
+	//public void setComics(Set<Comic> comics) {
+		//this.comics = comics;
+	//}
 	public Integer getId() {
 		return id;
 	}	

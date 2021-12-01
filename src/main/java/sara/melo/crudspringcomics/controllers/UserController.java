@@ -47,7 +47,13 @@ public class UserController {
 		
 		try {
 			user = userRepository.findById(id); // Busca o usuário no banco de dados
-			return new ResponseEntity<Optional<User>>(user, HttpStatus.OK); // Retorna status 200 com os dados do usuario em questão
+			
+			if(user.isEmpty()) {
+				return new ResponseEntity<Optional<User>>(HttpStatus.NOT_FOUND); // Não encontrou o usuário, retorna status 404;
+			} else {
+				return new ResponseEntity<Optional<User>>(user, HttpStatus.OK); // Retorna status 200 com os dados do usuario em questão
+			}
+		
 		} catch (NoSuchElementException nsee) {
 			return new ResponseEntity<Optional<User>>(HttpStatus.NOT_FOUND); // Não encontrou o usuário, retorna status 404;
 		}			

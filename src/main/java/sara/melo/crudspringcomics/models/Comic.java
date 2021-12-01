@@ -1,16 +1,24 @@
 package sara.melo.crudspringcomics.models;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 
 @Entity
-@Table(uniqueConstraints={@UniqueConstraint(columnNames = {"ISBN"})})
+@Table(name="comics", uniqueConstraints={@UniqueConstraint(columnNames = {"ISBN"})})
 public class Comic {
 
 	@GeneratedValue(strategy = GenerationType.AUTO)
@@ -33,6 +41,14 @@ public class Comic {
 	private String ISBN;
 	
 	private String descricao;
+	
+	
+	public Comic() {
+		super();
+	}
+	
+	//@ManyToMany(mappedBy="comics", fetch = FetchType.LAZY)
+	//private Set<User> users = new HashSet<>();		
 	
 	public Integer getId() {
 		return id;
@@ -75,5 +91,13 @@ public class Comic {
 	}
 	public void setDescricao(String descricao) {
 		this.descricao = descricao;
-	}		
+	}
+
+	@Override
+	public String toString() {
+		return "Comic [id=" + id + ", comicId=" + comicId + ", titulo=" + titulo + ", preco=" + preco + ", autores="
+				+ autores + ", ISBN=" + ISBN + ", descricao=" + descricao + "]";
+	}	
+	
+	
 }
