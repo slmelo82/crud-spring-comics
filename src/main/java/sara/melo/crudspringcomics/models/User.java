@@ -5,17 +5,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.JoinTable;
-import javax.persistence.ManyToMany;
-import javax.persistence.Table;
-import javax.persistence.UniqueConstraint;
+import javax.persistence.*;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotEmpty;
@@ -23,14 +13,16 @@ import javax.validation.constraints.NotNull;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import sara.melo.crudspringcomics.controllers.validation.Cpf;
 
 @Entity
 @Table(name="users", uniqueConstraints={@UniqueConstraint(columnNames = {"cpf" , "email"})})
 public class User {
 	
-	@GeneratedValue(strategy = GenerationType.AUTO)
 	@Id
+	@Column(name = "user_id")
+	@GeneratedValue(strategy = GenerationType.AUTO)
 	private Integer id;
 	
 	@NotBlank(message = "O Nome é obrigatório!")
@@ -47,20 +39,17 @@ public class User {
 	@NotNull(message = "A data de nascimento é obrigatória!")
 	@JsonFormat(pattern="dd/MM/yyyy")
 	private Date nascimento;
-	
-	//@ManyToMany(fetch = FetchType.LAZY)
-	//@JoinTable(name="users_comics",
-			//joinColumns = {@JoinColumn(name = "user_id")}, 
-		    //inverseJoinColumns = {@JoinColumn(name = "comic_id")}) 
-	//private Set<Comic> comics = new HashSet<>();
-					
+
+	@ManyToMany(mappedBy="users")
+	@JsonIgnore
+	private Set<Comic> comics = new HashSet<>();
 		
-	//public Set<Comic> getComics() {
-		//return comics;
-	//}
-	//public void setComics(Set<Comic> comics) {
-		//this.comics = comics;
-	//}
+	public Set<Comic> getComics() {
+		return comics;
+	}
+	public void setComics(Set<Comic> comics) {
+		this.comics = comics;
+	}
 	public Integer getId() {
 		return id;
 	}	

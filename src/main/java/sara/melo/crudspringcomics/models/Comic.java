@@ -1,19 +1,12 @@
 package sara.melo.crudspringcomics.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinTable;
-import javax.persistence.ManyToMany;
-import javax.persistence.Table;
-import javax.persistence.UniqueConstraint;
+import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 
@@ -21,10 +14,11 @@ import javax.validation.constraints.NotNull;
 @Table(name="comics", uniqueConstraints={@UniqueConstraint(columnNames = {"ISBN"})})
 public class Comic {
 
-	@GeneratedValue(strategy = GenerationType.AUTO)
 	@Id
+	@GeneratedValue(strategy = GenerationType.AUTO)
 	private Integer id;
-	
+
+	@Column(name = "comicId")
 	@NotNull(message = "O comicId é obrigatório!")
 	private Integer comicId;
 	
@@ -39,17 +33,38 @@ public class Comic {
 	
 	@NotBlank(message = "Os ISBN e obrigatório!")
 	private String ISBN;
-	
+
 	private String descricao;
-	
-	
+
+	@ManyToMany(cascade = CascadeType.ALL)
+	@JsonIgnore
+	@JoinTable(name="comics_users",
+			joinColumns = {@JoinColumn(name = "comic_fk")},
+			inverseJoinColumns = {@JoinColumn(name = "user_fk")}
+	)
+	private Set<User> users = new HashSet<>();
+
 	public Comic() {
-		super();
+
 	}
-	
-	//@ManyToMany(mappedBy="comics", fetch = FetchType.LAZY)
-	//private Set<User> users = new HashSet<>();		
-	
+
+	public Comic(Integer id, Integer comicId, String titulo, Double preco, String autores, String ISBN, String descricao) {
+		this.id = id;
+		this.comicId = comicId;
+		this.titulo = titulo;
+		this.preco = preco;
+		this.autores = autores;
+		this.ISBN = ISBN;
+		this.descricao = descricao;
+	}
+
+	public Set<User> getUsers() {
+		return users;
+	}
+	public void setUsers(Set<User> users) {
+		this.users = users;
+	}
+
 	public Integer getId() {
 		return id;
 	}
@@ -93,11 +108,5 @@ public class Comic {
 		this.descricao = descricao;
 	}
 
-	@Override
-	public String toString() {
-		return "Comic [id=" + id + ", comicId=" + comicId + ", titulo=" + titulo + ", preco=" + preco + ", autores="
-				+ autores + ", ISBN=" + ISBN + ", descricao=" + descricao + "]";
-	}	
-	
 	
 }

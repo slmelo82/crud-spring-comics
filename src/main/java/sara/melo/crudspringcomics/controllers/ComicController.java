@@ -4,14 +4,11 @@ import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Optional;
+import java.util.*;
 
 import javax.validation.Valid;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.codec.Hex;
@@ -31,6 +28,7 @@ import sara.melo.crudspringcomics.models.MarvelComicResponse;
 import sara.melo.crudspringcomics.models.MarvelComicResponse.Results;
 import sara.melo.crudspringcomics.models.User;
 import sara.melo.crudspringcomics.repository.ComicRepository;
+import sara.melo.crudspringcomics.repository.UserRepository;
 
 @RestController
 @RequestMapping(value = "/comics")
@@ -38,16 +36,14 @@ public class ComicController {
 	
 	private final String privateKey = "dcb478f14d37940e00ef6201be6ef56f11bfaa1b";
 	private final String publicKey = "be8487544ad1f694b79fb77d414dd157";
-	
-	private ComicRepository comicRepository;	
-	private MarvelClient cepService;
-	
-	public ComicController(ComicRepository comicRepository, MarvelClient cepService) {
-		super();
-		this.comicRepository = comicRepository;
-		this.cepService = cepService;
-	}
-	
+
+	@Autowired
+	private ComicRepository comicRepository;
+	@Autowired
+	private UserRepository userRepository;
+	@Autowired
+	private MarvelClient marvelClient;
+
 	
 	@GetMapping
 	//Retorna uma lista de todos os quadrinhos
@@ -59,68 +55,90 @@ public class ComicController {
 	
 	@GetMapping(path="/{id}")
 	//Retorna um unico quadrinho, de acordo com o id
-	public ResponseEntity<Optional<Comic>> getById(@PathVariable Integer id) {
+	public ResponseEntity<Comic> getById(@PathVariable Integer id) {
 		Optional<Comic> comic;
 		
 		try {
 			
 			comic = comicRepository.findById(id); // Busca o usuário no banco de dados
 			
-			if(comic.isEmpty()) {
-				return new ResponseEntity<Optional<Comic>>(comic, HttpStatus.OK); // Retorna status 200 com os dados do quadrinho em questão
+			if(!comic.isEmpty()) {
+				return new ResponseEntity<Comic>(comic.get(), HttpStatus.OK); // Retorna status 200 com os dados do quadrinho em questão
 			} else {
-				return new ResponseEntity<Optional<Comic>>(HttpStatus.NOT_FOUND); // // Não encontrou o quadrinho, retorna status 404;
+				return new ResponseEntity<Comic>(HttpStatus.NOT_FOUND); // // Não encontrou o quadrinho, retorna status 404;
 			}						
 			
 			
 		} catch (NoSuchElementException nsee) {
-			return new ResponseEntity<Optional<Comic>>(HttpStatus.NOT_FOUND); // Não encontrou o quadrinho, retorna status 404;
+			return new ResponseEntity<Comic>(HttpStatus.NOT_FOUND); // Não encontrou o quadrinho, retorna status 404;
 		}			
-	}	
-	
+	}
+
+	@GetMapping(path="/byUser/{id}")
+	//Retorna um unico quadrinho, de acordo com o id
+	public ResponseEntity<Set<Comic>> getByUserId(@PathVariable Integer id) {
+		Set<Comic> comics;
+
+		try {
+
+			comics = comicRepository.findAllByUserId(id);
+
+			if(!comics.isEmpty()) {
+				return new ResponseEntity(comics, HttpStatus.OK); // Retorna status 200 com os dados do quadrinho em questão
+			} else {
+				return new ResponseEntity(HttpStatus.NOT_FOUND); // // Não encontrou o quadrinho, retorna status 404;
+			}
+
+
+		} catch (NoSuchElementException nsee) {
+			return new ResponseEntity(HttpStatus.NOT_FOUND); // Não encontrou o quadrinho, retorna status 404;
+		}
+	}
+
 	@PostMapping
 	public ResponseEntity save(@RequestBody Comic comic) {
-
-		try {						
+		try {
+			// REALIZA A CONSULTA NA API DA MARVEL, PASSANDO O comicId
 			MarvelComicResponse comicResponse = this.getComicById(comic.getComicId());
-			
+
+			//Busca o primeiro resultado da busca
 			Results comicEncontrado = comicResponse.getData().getResults().get(0);
-			
+
+			// No catalogo de quadrinhos, existem poucos quadrinhos com ISBN. Então verificamos se esse banco e vazio
+			// Se for vazio, retorna uma exceção de conflito
 			if(comicEncontrado.getIsbn().isEmpty() || comicEncontrado.getIsbn().isBlank()) {
 				return ResponseEntity
-			            .status(HttpStatus.CONFLICT) 		
+			            .status(HttpStatus.CONFLICT)
 			            .body("O Quadrinho com o comicId" + comic.getComicId() + " não tem ISBN.");
 			} else {
-				Comic comicNew = new Comic();			
+				 // SE TIVER O ISBN, PEGAMOS AS INFORMAÇÕES DO QUADRINHO E SALVAMOS EM NOSSO BANCO DE DADOS
+
+				Comic comicNew = new Comic();
 				comicNew.setComicId(comicEncontrado.getId());
 				comicNew.setAutores(comicEncontrado.getCreators().toString());
 				comicNew.setISBN(comicEncontrado.getIsbn());
 				comicNew.setTitulo(comicEncontrado.getTitle());
 				comicNew.setPreco(comicEncontrado.getPrices().get(0).getPrice());
-				
-				System.out.println(comicNew.toString());
-				
-				comicRepository.save(comicNew); // Salva quadrinho no banco de dados			
-				
-				return new ResponseEntity(comicNew, HttpStatus.OK);
+
+				comicRepository.save(comicNew); // Salva quadrinho no banco de dados
+				return new ResponseEntity(comicNew, HttpStatus.CREATED);
 			}
-			
 
 		} catch (Exception e) {
-			System.out.println(e);:
-            .body(e.getMessage()); // Não encontrou o quadrinho, retorna status 404;
-		}		
-
+			return ResponseEntity
+					.status(HttpStatus.CONFLICT)
+					.body(e.getMessage());
+		}
 	}
 	
 	@DeleteMapping(path="/{id}")
 	//Deleta um unico quadrinho, de acordo com o id
-	public ResponseEntity<Optional<Comic>> deleteById(@PathVariable Integer id) {			
+	public ResponseEntity<Comic> deleteById(@PathVariable Integer id) {
 		try {
 			comicRepository.deleteById(id); // Deleta o quadrinho no banco de dados
 			return new ResponseEntity<>(HttpStatus.OK); // Retorna status 200 , quadrinho deletado com sucesso
 		} catch (NoSuchElementException nsee) {
-			return new ResponseEntity<Optional<Comic>>(HttpStatus.NOT_FOUND); // Não encontrou o quadrinho, retorna status 404;
+			return new ResponseEntity<Comic>(HttpStatus.NOT_FOUND); // Não encontrou o quadrinho, retorna status 404;
 		}			
 	}
 	
@@ -142,11 +160,43 @@ public class ComicController {
 			return new ResponseEntity<>(comicUpdated, HttpStatus.OK);
 		}).orElse(ResponseEntity.notFound().build());
 	}
-	
-	private MarvelComicResponse getComicById(Integer id) {
-		Long currentTime = System.currentTimeMillis();
 
-		MarvelComicResponse comic = this.cepService.getComic(id, this.publicKey, this.MD5(currentTime + this.privateKey + this.publicKey), currentTime);
+	@PutMapping(path="/{comicId}/user/{userId}")
+	//Vincula um quadrinho a um determinado usuário.
+	public ResponseEntity linkComicToUser(@PathVariable Integer comicId, @PathVariable Integer userId) {
+
+		if(comicRepository.findById(comicId).isEmpty()) {
+			return ResponseEntity
+					.status(HttpStatus.NOT_FOUND)
+					.body("O Quadrinho com o comicId "+ comicId + " não foi encontrado!");
+		}
+
+		if(userRepository.findById(userId).isEmpty()) {
+			return ResponseEntity
+					.status(HttpStatus.NOT_FOUND)
+					.body("O Usuário com o userId"+ userId + " não foi encontrado!");
+		}
+
+		try {
+			Comic comic = comicRepository.findById(comicId).get();
+			User user = userRepository.findById(userId).get();
+
+			comic.getUsers().add(user);
+
+			Comic comicUpdated = comicRepository.save(comic);
+
+			return new ResponseEntity<>(comicUpdated, HttpStatus.CREATED);
+		} catch (Exception e) {
+			return ResponseEntity
+					.status(HttpStatus.BAD_REQUEST)
+					.body(e.getMessage());
+		}
+	}
+	
+	private MarvelComicResponse getComicById(Integer comicId) {
+		Long timestamp = System.currentTimeMillis();
+
+		MarvelComicResponse comic = this.marvelClient.getComic(comicId, this.publicKey, this.MD5(timestamp + this.privateKey + this.publicKey), timestamp);
 		return comic;
 	}
 	

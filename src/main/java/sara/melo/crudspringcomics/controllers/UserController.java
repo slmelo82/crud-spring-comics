@@ -7,6 +7,7 @@ import java.util.Optional;
 
 import javax.validation.Valid;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -25,67 +26,63 @@ import sara.melo.crudspringcomics.repository.UserRepository;
 @RequestMapping(value = "/users")
 public class UserController {
 
+	@Autowired
 	private UserRepository userRepository;
-	
-	public UserController(UserRepository userRepository) {
-		super();
-		this.userRepository = userRepository;
-	}
-	
+
 	@GetMapping
 	//Retorna uma lista de todos os usuários
 	public ResponseEntity<List<User>> getAll() {
 		List<User> users = new ArrayList<>(); // Cria uma lista
 		users = userRepository.findAll(); // Busca todos os usuários no banco de dados
-		return new ResponseEntity<>(users, HttpStatus.OK); // Retorna status 200 com a lista de todos usuários no banco
+		return new ResponseEntity<>(users, HttpStatus.OK); // Retorna status 201 com a lista de todos usuários no banco
 	}
-	
-	@GetMapping(path="/{id}")
+
+	@GetMapping(path = "/{id}")
 	//Retorna um unico usuário, de acordo com o id
 	public ResponseEntity<Optional<User>> getById(@PathVariable Integer id) {
 		Optional<User> user;
-		
+
 		try {
 			user = userRepository.findById(id); // Busca o usuário no banco de dados
-			
-			if(user.isEmpty()) {
+
+			if (user.isEmpty()) {
 				return new ResponseEntity<Optional<User>>(HttpStatus.NOT_FOUND); // Não encontrou o usuário, retorna status 404;
 			} else {
 				return new ResponseEntity<Optional<User>>(user, HttpStatus.OK); // Retorna status 200 com os dados do usuario em questão
 			}
-		
+
 		} catch (NoSuchElementException nsee) {
-			return new ResponseEntity<Optional<User>>(HttpStatus.NOT_FOUND); // Não encontrou o usuário, retorna status 404;
-		}			
-	}	
-	
+			return new ResponseEntity<Optional<User>>(HttpStatus.BAD_REQUEST); // Não encontrou o usuário, retorna status 400;
+		}
+	}
+
 	@PostMapping
 	public ResponseEntity<User> save(@RequestBody @Valid User user) {
 		userRepository.save(user); // Salva usuário no banco de dados
-		return new ResponseEntity<>(user, HttpStatus.OK); // Retorna status 200 com os dados do usuário criado;
+		return new ResponseEntity<>(user, HttpStatus.CREATED); // Retorna status 201 com os dados do usuário criado;
 	}
-	
-	@DeleteMapping(path="/{id}")
+
+	@DeleteMapping(path = "/{id}")
 	//Deleta um unico usuário, de acordo com o id
-	public ResponseEntity<Optional<User>> deleteById(@PathVariable Integer id) {			
+	public ResponseEntity<Optional<User>> deleteById(@PathVariable Integer id) {
 		try {
 			userRepository.deleteById(id); // Deleta o usuário no banco de dados
 			return new ResponseEntity<>(HttpStatus.OK); // Retorna status 200 , usuário deletado com sucesso
 		} catch (NoSuchElementException nsee) {
-			return new ResponseEntity<Optional<User>>(HttpStatus.NOT_FOUND); // Não encontrou o usuário, retorna status 404;
-		}			
+			return new ResponseEntity<Optional<User>>(HttpStatus.BAD_REQUEST); // Não encontrou o usuário, retorna status 400;
+		}
 	}
-	
-	@PutMapping(path="/{id}")
+
+	@PutMapping(path = "/{id}")
 	//Atualiza os dados de um usuário; Se não encontrar, retorna erro 404
-	public ResponseEntity<User> update(@PathVariable Integer id, @RequestBody @Valid User newUser) {			
+	public ResponseEntity<User> update(@PathVariable Integer id, @RequestBody @Valid User newUser) {
 		return userRepository.findById(id).map(user -> {
 			user.setNome(newUser.getNome());
 			user.setEmail(newUser.getEmail());
 			user.setNascimento(newUser.getNascimento());
 			user.setCpf(newUser.getCpf());
 			User userUpdated = userRepository.save(user);
-			return new ResponseEntity<>(userUpdated, HttpStatus.OK);
+			return new ResponseEntity<>(userUpdated, HttpStatus.CREATED);
 		}).orElse(ResponseEntity.notFound().build());
 	}
 
